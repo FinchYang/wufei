@@ -18,15 +18,15 @@ namespace Silo
         static void Main(string[] args)
         {
             // TODO replace with your connection string
-            const string connectionString = "YOUR_CONNECTION_STRING_HERE";
+           // const string connectionString = "YOUR_CONNECTION_STRING_HERE";
             silo = new SiloHostBuilder()
                 .Configure<ClusterOptions>(options =>
                 {
-                    options.ClusterId = "orleans-docker";
-                    options.ServiceId = "AspNetSampleApp";
-                })
-                .UseAzureStorageClustering(options => options.ConnectionString = connectionString)
-                .ConfigureEndpoints(siloPort: 11111, gatewayPort: 30000)
+                    options.ClusterId = "orleansdockerwufei";
+                    options.ServiceId = "NoThief";
+                }).UseLocalhostClustering()
+              //  .UseAzureStorageClustering(options => options.ConnectionString = connectionString)
+               // .ConfigureEndpoints(siloPort: 12345, gatewayPort: 34567)
                 .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(ValueGrain).Assembly).WithReferences())
                 .ConfigureLogging(builder => builder.SetMinimumLevel(LogLevel.Warning).AddConsole())
                 .Build();

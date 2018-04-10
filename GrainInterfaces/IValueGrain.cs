@@ -9,6 +9,7 @@ namespace GrainInterfaces
     public interface IValueGrain : IGrainWithIntegerKey
     {
         Task<string> GetValue();
+        Task<int> CompareFace(string faceInfo);
 
         Task SetValue(string value);
     }

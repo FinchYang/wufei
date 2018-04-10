@@ -43,15 +43,16 @@ namespace API
         private IClusterClient CreateClusterClient(IServiceProvider serviceProvider)
         {
             // TODO replace with your connection string
-            const string connectionString = "YOUR_CONNECTION_STRING_HERE";
+           // const string connectionString = "YOUR_CONNECTION_STRING_HERE";
             var client = new ClientBuilder()
                 .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(IValueGrain).Assembly))
                 .Configure<ClusterOptions>(options =>
                 {
-                    options.ClusterId = "orleans-docker";
-                    options.ServiceId = "AspNetSampleApp";
+                    options.ClusterId = "orleansdockerwufei";
+                    options.ServiceId = "NoThief";
                 })
-                .UseAzureStorageClustering(options => options.ConnectionString = connectionString)
+                .UseLocalhostClustering()
+               // .UseAzureStorageClustering(options => options.ConnectionString = connectionString)
                 .Build();
             StartClientWithRetries(client).Wait();
             return client;
