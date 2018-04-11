@@ -10,15 +10,16 @@ namespace Grains
 {
     public partial class ValueGrain : Grain, IValueGrain
     {
-        const string sofile="libcsdk-face.so";
-        [DllImport(sofile, CallingConvention = CallingConvention.Cdecl)]
-        public extern static int mgv_set_log(int level);
-        [DllImport(sofile, CallingConvention = CallingConvention.Cdecl)]
-        public extern static unsafe int mgv_create_engine(string model_path, Engine** pengine);
-        [DllImport(sofile, CallingConvention = CallingConvention.Cdecl)]
-        public extern static string mgv_get_error_str(int code);
-        [DllImport(sofile, CallingConvention = CallingConvention.Cdecl)]
-        public extern static unsafe int mgv_destroy_engine(Engine* engine);
+      //  const string sofile="libau.so";
+         const string sofile="libcsdk-face.so";
+        // [DllImport(sofile, CallingConvention = CallingConvention.Cdecl)]
+        // public extern static int mgv_set_log(int level);
+        // [DllImport(sofile, CallingConvention = CallingConvention.Cdecl)]
+        // public extern static unsafe int mgv_create_engine(string model_path, Engine** pengine);
+        // [DllImport(sofile, CallingConvention = CallingConvention.Cdecl)]
+        // public extern static string mgv_get_error_str(int code);
+        // [DllImport(sofile, CallingConvention = CallingConvention.Cdecl)]
+        // public extern static unsafe int mgv_destroy_engine(Engine* engine);
 
         [DllImport(sofile, CallingConvention = CallingConvention.Cdecl)]
         public extern static  int GetFeatureFromJpeg(byte[] f1, int len1, byte[] f2, int len2);

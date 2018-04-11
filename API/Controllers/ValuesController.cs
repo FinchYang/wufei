@@ -12,7 +12,7 @@ using Orleans;
 namespace API.Controllers
 {
     [Route("api/[controller]")]
-    public class ValuesController : Controller
+    public partial class ValuesController : Controller
     {
       //  public readonly ILogger<ValuesController> _log;
         private IClusterClient client;
@@ -35,20 +35,6 @@ namespace API.Controllers
         {
             var grain = this.client.GetGrain<IValueGrain>(id);
             return await grain.GetValue();
-        }
- public class CompareFaceInput
-    {
-        public string picture1 { get; set; }
-        public string picture2 { get; set; }
-    }
-     public class ReturnCode
-    {
-        public int code { get; set; }
-        public string explanation { get; set; }
-    }
-     public class FaceSource{
-            public string FaceFile1;
-            public string FaceFile2;
         }
  public async Task< ReturnCode> Post([FromBody]CompareFaceInput input)
         {
