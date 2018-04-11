@@ -89,7 +89,7 @@ namespace API.Controllers
             catch (Exception ex)
             {
                 return false;
-                throw;
+                throw ex;
             }
             finally
             {
