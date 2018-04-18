@@ -11,7 +11,8 @@ namespace Grains
     public partial class ValueGrain : Grain, IValueGrain
     {
       //  const string sofile="libau.so";
-         const string sofile="libcsdk-face.so";
+        // const string sofile="libcsdk-face.so";
+          const string sofile="core_sdk.dll";
         // [DllImport(sofile, CallingConvention = CallingConvention.Cdecl)]
         // public extern static int mgv_set_log(int level);
         // [DllImport(sofile, CallingConvention = CallingConvention.Cdecl)]

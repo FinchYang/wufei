@@ -19,6 +19,28 @@ namespace API.Controllers
         {
             _log = log;
         }
+    public class a{
+        public string b;
+    }
+        [HttpGet]
+        [Route("test")]
+        public IActionResult test(long version)
+        {
+
+            try
+            {
+               var c=new List<a>();
+               c.Add(new a{b="haha"});
+               return Ok(c);
+            }
+            catch (Exception ex)
+            {
+                _log.LogError(string.Format("FaceDesktop,GetNoticeUpdatePackage error:{0}", version), ex);
+                return NotFound(ex.Message);
+            }
+
+            return NotFound(string.Empty);
+        }
         [HttpGet]
         [Route("GetFaceDesktopUpdatePackage")]
         public IActionResult GetFaceDesktopUpdatePackage(long version)
