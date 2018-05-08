@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using API.dbmodel;
+using System.IO;
+using System.Text.RegularExpressions;
 
 namespace API.Controllers
 {
@@ -20,7 +22,79 @@ namespace API.Controllers
         {
             _log = log;
         }
+ [HttpPost]
+        [Route("cloudCompare")]
+        public ReturnCode cloudCompare([FromBody]CompareFaceInput input)
+        {
+            try
+            {
+                var FaceFile1 = Path.GetTempFileName() + ".jpg";
+                System.IO.File.WriteAllBytes(FaceFile1, Convert.FromBase64String(input.picture1));
+                var FaceFile2 = Path.GetTempFileName() + ".jpg";
+                System.IO.File.WriteAllBytes(FaceFile2, Convert.FromBase64String(input.picture2));
+               
 
+                return new ReturnCode { code = SmartCompare(FaceFile1, FaceFile2)?1:0, explanation = "" };
+            }
+            catch (Exception ex)
+            {
+                return new ReturnCode { code = -100, explanation = ex.Message };
+            }
+        }
+          public class ReturnCode
+        {
+            public int code { get; set; }
+            public string explanation { get; set; }
+        }
+        public class CompareFaceInput
+        {
+            public string picture1 { get; set; }
+            public string picture2 { get; set; }
+        }
+        bool SmartCompare(string f1,string f2)
+        {
+            var a = new System.Diagnostics.Process();
+
+            a.StartInfo.UseShellExecute = false;
+            a.StartInfo.RedirectStandardOutput = true;
+            a.StartInfo.CreateNoWindow = true;
+            a.StartInfo.FileName =  "facer";
+            a.StartInfo.WorkingDirectory="/home/finch/bin";
+            a.StartInfo.Arguments = string.Format(" \"{0}\"  \"{1}\"", f1, f2);
+            a.Start();
+            var output = a.StandardOutput.ReadToEnd();
+            a.WaitForExit();
+            var ret = a.ExitCode;
+
+            var reg = @"(?<=terminate)0\.[\d]{4,}";
+            var m = Regex.Match(output, reg);
+            if (m.Success)
+            {
+                var score = double.Parse(m.Value);
+                // labelscore.Text = ((int)(score * 100)).ToString() + "%";
+                if (score > 0.74)
+                {
+                    return true;
+                }
+            }
+            _log.LogInformation("outpu:{0}",output);
+            return false;
+        }
+           [Route("testcompare")]
+        public ReturnCode testcompare()
+        {
+            try
+            {
+                var FaceFile1 = "222.jpg";
+                var FaceFile2 = "233.jpg";
+
+                return new ReturnCode { code = SmartCompare(FaceFile1, FaceFile2) ? 1 : 0, explanation = "" };
+            }
+            catch (Exception ex)
+            {
+                return new ReturnCode { code = -100, explanation = ex.Message };
+            }
+        }
         [HttpPost]
         [Route("PostCompared")]
         public async Task<IActionResult> PostCompared([FromBody] ComparedInfo trails)

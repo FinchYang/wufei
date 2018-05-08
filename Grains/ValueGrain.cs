@@ -12,7 +12,7 @@ namespace Grains
     {
       //  const string sofile="libau.so";
         // const string sofile="libcsdk-face.so";
-          const string sofile="core_sdk.dll";
+         // const string sofile="core_sdk.dll";
         // [DllImport(sofile, CallingConvention = CallingConvention.Cdecl)]
         // public extern static int mgv_set_log(int level);
         // [DllImport(sofile, CallingConvention = CallingConvention.Cdecl)]
@@ -22,14 +22,37 @@ namespace Grains
         // [DllImport(sofile, CallingConvention = CallingConvention.Cdecl)]
         // public extern static unsafe int mgv_destroy_engine(Engine* engine);
 
-        [DllImport(sofile, CallingConvention = CallingConvention.Cdecl)]
-        public extern static  int GetFeatureFromJpeg(byte[] f1, int len1, byte[] f2, int len2);
-        [DllImport(sofile, CallingConvention = CallingConvention.Cdecl)]
-        public extern static  float CalcFeatureSimilarity(byte[] featData1, int featLen1, byte[] featData2, int featLen2);
+        // [DllImport(sofile, CallingConvention = CallingConvention.Cdecl)]
+        // public extern static  int GetFeatureFromJpeg(byte[] f1, int len1, byte[] f2, int len2);
+        // [DllImport(sofile, CallingConvention = CallingConvention.Cdecl)]
+        // public extern static  float CalcFeatureSimilarity(byte[] featData1, int featLen1, byte[] featData2, int featLen2);
         
         private string value = "none";
 
         const double WARNING_VALUE = 73.0f;
+
+          public Task<int> CompareFace(string FaceFiles)
+        {
+            var faces = JsonConvert.DeserializeObject<FaceSource>(FaceFiles);
+            var traceFile = GetTraceFile();
+            Trace.AutoFlush = true;
+            Trace.Listeners.Add(new TextWriterTraceListener(traceFile));
+
+            // var ret=-1;
+            // GC.Collect(0, GCCollectionMode.Forced);
+            // if (score <= 57.0f)
+            // {
+            //     return Task.FromResult(2);
+            // }
+            // else if (score > WARNING_VALUE)
+            // {
+            //     return Task.FromResult(1);
+            // }
+            // else
+            // {
+                return Task.FromResult(99);
+            //}
+        }
         static FaceFile freadAll(string fname)
         {
             FaceFile ret = new FaceFile();
@@ -81,53 +104,53 @@ namespace Grains
             var traceFile = basePath + "\\grainlog" + date + ".txt";
             return traceFile;
         }
-        public Task<int> CompareFace(string FaceFiles)
-        {
-            FaceFile fcontent1, fcontent2;
-            var faces = JsonConvert.DeserializeObject<FaceSource>(FaceFiles);
-            fcontent1 = freadAll(faces.FaceFile1);
-            fcontent2 = freadAll(faces.FaceFile2);
+       // public Task<int> CompareFace(string FaceFiles)
+        // {
+         //     FaceFile fcontent1, fcontent2;
+        //     var faces = JsonConvert.DeserializeObject<FaceSource>(FaceFiles);
+        //     fcontent1 = freadAll(faces.FaceFile1);
+        //     fcontent2 = freadAll(faces.FaceFile2);
 
-            int featLen1 = 0;
-            int featLen2 = 0;
-            byte[] featData1 = new byte[4096];
-            byte[] featData2 = new byte[4096];
+        //     int featLen1 = 0;
+        //     int featLen2 = 0;
+        //     byte[] featData1 = new byte[4096];
+        //     byte[] featData2 = new byte[4096];
 
-            var traceFile = GetTraceFile();
-            Trace.AutoFlush = true;
-            Trace.Listeners.Add(new TextWriterTraceListener(traceFile));
+        //     var traceFile = GetTraceFile();
+        //     Trace.AutoFlush = true;
+        //     Trace.Listeners.Add(new TextWriterTraceListener(traceFile));
 
-            var ret = -1;
-            featLen1 = GetFeatureFromJpeg(fcontent1.fcontent, fcontent1.flen, featData1, 4096 * 8);
-            ret = ShowReturnCode(featLen1);
-            if (ret <= 0)
-            {
-                Trace.TraceError("GetFeatureFromJpeg,{0},{1}", faces. FaceFile1, ret);
-                return Task.FromResult( ret);
-            }
-            featLen2 = GetFeatureFromJpeg(fcontent2.fcontent, fcontent2.flen, featData2, 4096 * 8);
-            ret = ShowReturnCode(featLen2);
-            if (ret <= 0)
-            {
-                Trace.TraceError("GetFeatureFromJpeg,{0},{1}", faces. FaceFile2, ret);
-                return Task.FromResult(ret);
-            }
+        //     var ret = -1;
+        //     featLen1 = GetFeatureFromJpeg(fcontent1.fcontent, fcontent1.flen, featData1, 4096 * 8);
+        //     ret = ShowReturnCode(featLen1);
+        //     if (ret <= 0)
+        //     {
+        //         Trace.TraceError("GetFeatureFromJpeg,{0},{1}", faces. FaceFile1, ret);
+        //         return Task.FromResult( ret);
+        //     }
+        //     featLen2 = GetFeatureFromJpeg(fcontent2.fcontent, fcontent2.flen, featData2, 4096 * 8);
+        //     ret = ShowReturnCode(featLen2);
+        //     if (ret <= 0)
+        //     {
+        //         Trace.TraceError("GetFeatureFromJpeg,{0},{1}", faces. FaceFile2, ret);
+        //         return Task.FromResult(ret);
+        //     }
 
-            float score = CalcFeatureSimilarity(featData1, featLen1, featData2, featLen2);
-            GC.Collect(0, GCCollectionMode.Forced);
-            if (score <= 57.0f)
-            {
-                return Task.FromResult(2);
-            }
-            else if (score > WARNING_VALUE)
-            {
-                return Task.FromResult(1);
-            }
-            else
-            {
-                return Task.FromResult(99);
-            }
-        }
+        //     float score = CalcFeatureSimilarity(featData1, featLen1, featData2, featLen2);
+        //     GC.Collect(0, GCCollectionMode.Forced);
+        //     if (score <= 57.0f)
+        //     {
+        //         return Task.FromResult(2);
+        //     }
+        //     else if (score > WARNING_VALUE)
+        //     {
+        //         return Task.FromResult(1);
+        //     }
+        //     else
+        //     {
+        //         return Task.FromResult(99);
+        //     }
+        // }
         
         public Task<string> GetValue()
         {
