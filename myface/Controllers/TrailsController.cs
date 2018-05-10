@@ -51,8 +51,8 @@ namespace myface
                 System.IO.File.WriteAllBytes(idimage, Convert.FromBase64String(input.idimage));
                 var capture = Path.GetTempFileName() + ".jpg";
                 System.IO.File.WriteAllBytes(capture, Convert.FromBase64String(input.capture));
-               
- return new ReturnCode { code = SmartCompareId(capture, idimage,input.id)?1:0, explanation = "" };
+               var a=SmartCompareId(capture, idimage,input.id);
+ return new ReturnCode { code = a.ok?1:0, explanation = a.some};
             }
             catch (Exception ex)
             {
@@ -75,14 +75,20 @@ namespace myface
             public string idimage { get; set; }
             public string capture { get; set; }
         }
-        bool SmartCompareId(string capturefile, string idimagefile, string id)
+         public class Comparereturn
         {
+            public bool ok { get; set; }
+            public string some { get; set; }
+        }
+        Comparereturn SmartCompareId(string capturefile, string idimagefile, string id)
+        {
+            var cret=new Comparereturn{some="ok",ok=false};
             var a = new System.Diagnostics.Process();
             a.StartInfo.UseShellExecute = false;
             a.StartInfo.RedirectStandardOutput = true;
             a.StartInfo.CreateNoWindow = true;
             var localimage = Path.Combine("what", id) + ".jpg";
-            var _score = 0.75;
+            var _score = 0.73;
             if (System.IO.File.Exists(localimage))
             {
                 a.StartInfo.Arguments = string.Format(" \"{0}\"  \"{1}\"", localimage, capturefile);
@@ -98,8 +104,10 @@ namespace myface
             var output = a.StandardOutput.ReadToEnd();
             a.WaitForExit();
             var ret = a.ExitCode;
-            var reg = @"(?<=terminate)0\.[\d]{4,}";
-            var m = Regex.Match(output, reg);         
+            var reg = @"(?<=terminate)0\.[\d]+";
+            var m = Regex.Match(output, reg);
+            
+                cret.some=output;         
             if (m.Success)
             {
                 var score = double.Parse(m.Value);
@@ -108,10 +116,11 @@ namespace myface
                    System.IO. File.Copy(capturefile, localimage, true);
                     // var th = new System.Threading.Thread(new System.Threading.ParameterizedThreadStart(uploadinfo));
                     // th.Start(upload);
-                    return true;
+                    //return (int)(score*100);
+                    cret.ok=true;
                 }
             }
-            return false;
+            return cret;
         }
         bool SmartCompare(string f1,string f2)
         {
