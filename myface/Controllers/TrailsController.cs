@@ -6,11 +6,11 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using API.dbmodel;
+using myface;
 using System.IO;
 using System.Text.RegularExpressions;
 
-namespace API.Controllers
+namespace myface
 {
     [Produces("application/json")]
     //  [Route("api/Trails")]
