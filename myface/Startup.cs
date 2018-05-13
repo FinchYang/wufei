@@ -21,12 +21,14 @@ namespace myface
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            Console.WriteLine(Configuration["option222"]);
             services.AddMvc();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
+            Console.WriteLine(Configuration["option111"]);
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();

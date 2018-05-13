@@ -11,6 +11,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 using com.baidu.ai;
 using Newtonsoft.Json;
+using Microsoft.Extensions.Configuration;
 
 namespace myface
 {
@@ -19,9 +20,12 @@ namespace myface
     public partial class TrailsController : Controller
     {
         public readonly ILogger<TrailsController> _log;
+  
 
-        public TrailsController(ILogger<TrailsController> log)
+        public IConfiguration Configuration { get; }
+        public TrailsController(ILogger<TrailsController> log,IConfiguration configuration)
         {
+             Configuration = configuration;
             _log = log;
         }
         [HttpPost]
@@ -84,6 +88,7 @@ namespace myface
         }
         Comparereturn SmartCompareId(string capturefile, string idimagefile, string id)
         {
+            
             var cret = new Comparereturn { some = "ok", ok = false };
             var a = new System.Diagnostics.Process();
             a.StartInfo.UseShellExecute = false;
@@ -91,7 +96,7 @@ namespace myface
             a.StartInfo.CreateNoWindow = true;
             var localimage = Path.Combine("what", id) + ".jpg";
             var _score = 0.73;
-            var idcompare = false;
+           // var idcompare = false;
             if (System.IO.File.Exists(localimage))
             {
                 a.StartInfo.Arguments = string.Format(" \"{0}\"  \"{1}\"", localimage, capturefile);
@@ -100,7 +105,7 @@ namespace myface
             else
             {
                 a.StartInfo.Arguments = string.Format(" \"{0}\"  \"{1}\"", idimagefile, capturefile);
-                idcompare = true;
+              //  idcompare = true;
             }
             a.StartInfo.FileName = "./facer";
             a.StartInfo.WorkingDirectory = ".";
@@ -128,7 +133,14 @@ namespace myface
             {
                 if (output.Contains("image1"))
                 {
-                    var to = AccessToken.getAccessToken();
+                    var key=Configuration["clientId"];
+                    var secret=Configuration["clientSecret"];
+                    var to =new tokenret();
+                    if(!string.IsNullOrEmpty(key)&&!string.IsNullOrEmpty(secret)){
+to = AccessToken.getAccessToken(key,secret);
+            Console.WriteLine(key+"---"+secret);
+                    }
+                    else to = AccessToken.getAccessToken();
                     if (to.ok)
                     {
                         var req = new List<matchreq>();
@@ -169,6 +181,7 @@ namespace myface
                             cret.some="baidu-" +bret.error_code + bret.error_msg;
                         }
                     }
+                    else cret.some=to.access_token;
                 }
             }
             return cret;
