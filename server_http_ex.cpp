@@ -4,6 +4,9 @@
 #include <sstream>
 #include <string>
 #include <dirent.h>
+//#include <io.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <dlib/server.h>
 #include <dlib/dnn.h>
 #include <dlib/gui_widgets.h>
@@ -49,7 +52,7 @@ static const std::string base64_chars =
              "abcdefghijklmnopqrstuvwxyz"
              "0123456789+/";
 
-
+string picpath="/tmp";
 static inline bool is_base64(unsigned char c) {
   return (isalnum(c) || (c == '+') || (c == '/'));
 }
@@ -148,7 +151,7 @@ int dirinfo()
  matrix<rgb_pixel> img1;
        DIR *dp;
     struct dirent *dirp;
-    string dirname="/home/finch/dev/face_recognition-master/face_recognition/bbb";
+    string dirname=picpath;//"/home/finch/dev/face_recognition-master/face_recognition/bbb";
 
       deserialize("shape_predictor_5_face_landmarks.dat") >> sp;
 
@@ -260,23 +263,56 @@ class web_server : public server_http
     {
         ostringstream sout;
        if(incoming.request_type=="POST"){
-     sout << "it's post "         << incoming.path << endl;
-     if(incoming.path=="/oneofn"){
-         ofstream myfile;
-         string fname = tmpnam(NULL);
-         cout << "filename:" << fname << endl;
-         myfile.open(fname);
-        // string fc=base64_decode(incoming.body.substr(1,incoming.body.size()-2));
-         string fc=base64_decode(incoming.body);
-        //  cout << "content:" << fc << endl;
-         myfile <<fc;
-         myfile.close();
-        sout<<fname << "it's post "         << incoming.path << endl;
-        sout << needleinocean(fname).c_str() << endl;
-        return sout.str();
-    }
-}
-  sout << " <html> <body> "
+          //  sout << "it's post "         << incoming.path << endl;
+            if(incoming.path=="/oneofn"){
+                ofstream myfile;
+                string fname = tmpnam(NULL);
+                cout << "filename:" << fname << endl;
+                myfile.open(fname);
+                // string fc=base64_decode(incoming.body.substr(1,incoming.body.size()-2));
+                string fc=base64_decode(incoming.body);
+                //  cout << "content:" << fc << endl;
+                myfile <<fc;
+                myfile.close();
+              //  sout<<fname << "it's post "         << incoming.path << endl;
+                sout << needleinocean(fname).c_str() << endl;
+                return sout.str();
+            }
+            else if(incoming.path=="/addnewid"){
+                ofstream myfile;
+                string fname =incoming.headers["id"];
+                cout << "filename:" << fname << "--"<< incoming.headers["id"] << endl;
+               ifstream fin(dirname+"/"+ fname);
+               if(fin){
+                    sout << "id exist" << endl;
+                return sout.str();
+               }
+                myfile.open(dirname+"/"+ fname);
+                // string fc=base64_decode(incoming.body.substr(1,incoming.body.size()-2));
+                string fc=base64_decode(incoming.body);
+                //  cout << "content:" << fc << endl;
+                myfile <<fc;
+                myfile.close();
+matrix<rgb_pixel> img1;
+std::vector<matrix<rgb_pixel>> faceone;
+std::vector<matrix<float,0,1>> face_descriptor;
+                 load_image(img1, dirname+"/"+ fname);
+        for (auto face : detector(img1))
+        {
+            auto shape = sp(img1, face);
+            matrix<rgb_pixel> face_chip;
+            extract_image_chip(img1, get_face_chip_details(shape,150,0.25), face_chip);
+            faceone.push_back(move(face_chip));
+            faceindex.push_back(fname);
+        }
+    
+     face_descriptor = net(faceone);
+face_descriptors.push_back(face_descriptor[0]);
+                sout << 0 << endl;
+                return sout.str();
+            }
+        }
+        sout << " <html> <body> "
             << "<form action='/form_handler' method='post'> "
             << "User Name: <input name='user' type='text'><br>  "
             << "User password: <input name='pass' type='text'> <input type='submit'> "
@@ -337,9 +373,9 @@ int main(int argc,char* argv[])
     try
     {
          cout << "needleinocean(argv[1]).c_str()" << endl;
+          picpath=argv[1];
         dirinfo();
-         cout << "adsjflkajdf" << endl;
-      //  cout << needleinocean(argv[1]).c_str() << endl;
+      cout << picpath << endl;
         web_server our_web_server;
 
         // make it listen on port 5000
