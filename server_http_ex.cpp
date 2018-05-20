@@ -191,22 +191,21 @@ typedef struct simscore
 bool sscomp(const sscore &a,const sscore &b){
     return a.score<b.score;
 }
-string needleinocean(string idfile) try
+string needleinocean(string idfile,string tempid="") try
 {
     matrix<rgb_pixel> img1;
-    
-      std::vector<matrix<rgb_pixel>> facecheck;
-    cout << "before" << endl;
-        load_image(img1, idfile);
-         cout << "after load!" << endl;
-        for (auto face : detector(img1))
-        {
-            auto shape = sp(img1, face);
-            matrix<rgb_pixel> face_chip;
-            extract_image_chip(img1, get_face_chip_details(shape,150,0.25), face_chip);
-            facecheck.push_back(move(face_chip));
-        }
-  
+    std::vector<matrix<rgb_pixel>> facecheck;
+ //cout << "before load_image" << endl;
+    load_image(img1, idfile);
+  //cout << "before load_image" << endl;
+    for (auto face : detector(img1))
+    {
+        auto shape = sp(img1, face);
+        matrix<rgb_pixel> face_chip;
+       // extract_image_chip(img1, get_face_chip_details(shape,150,0.25), face_chip);
+        extract_image_chip(img1, get_face_chip_details(shape,200,0.2), face_chip);
+        facecheck.push_back(move(face_chip));
+    }  
  
     if (facecheck.size() == 0)
     {
@@ -214,38 +213,38 @@ string needleinocean(string idfile) try
         return "No faces found in image!";
     }
 
-    // This call asks the DNN to convert each face image in faces into a 128D vector.
-    // In this 128D vector space, images from the same person will be close to each other
-    // but vectors from different people will be far apart.  So we can use these vectors to
-    // identify if a pair of images are from the same person or from different people.  
     std::vector<matrix<float,0,1>> face_descriptors_check = net(facecheck);
-
-    // In particular, one simple thing we can do is face clustering.  This next bit of code
-    // creates a graph of connected faces and then uses the Chinese whispers graph clustering
-    // algorithm to identify how many people there are and which faces belong to whom.
-    std::vector<sample_pair> edges;
     std::vector<sscore> score;
     for (size_t i = 0; i < face_descriptors.size(); ++i)
     {
         for (size_t j = 0; j < face_descriptors_check.size(); ++j)
         {            
             float sim=length(face_descriptors[i]-face_descriptors_check[j]);
-            if ( sim < 0.6) {
+            if ( sim < 0.5) {
                 sscore ss;
                 ss.index=i;
                 ss.score=sim;
- score.push_back(ss);
+                score.push_back(ss);
             }               
         }
     }
     sort(score.begin(),score.end(),sscomp);
-    //char str[20];
-    //_gcvt_s(str,sizeof(str),score[0].score,18);
-
+ //cout << "in needle----" << tempid << endl;
     stringstream ss;
-    ss<<score[0].score<< "--"<<score.size() <<flush;
-
-    return faceindex[score[0].index]+ss.str();
+    if(score.size()>0){
+        ss<<score[0].score<< "--"<<score.size()<< "--"<< score[score.size()-1].score<<flush;
+        cout << idfile <<"--" << faceindex[score[0].index] << "--" << ss.str() << endl;
+        if(tempid!=""){
+            for(size_t k=0;k<score.size();k++){
+                if(faceindex[score[k].index]==tempid){
+                    ss<<"index="<<k<<flush;
+                    break;
+                }
+            }
+        }
+        return faceindex[score[0].index]+ss.str();
+    }
+    return "no match";
 }
 catch (std::exception& e)
 {
@@ -267,27 +266,31 @@ class web_server : public server_http
             if(incoming.path=="/oneofn"){
                 ofstream myfile;
                 string fname = tmpnam(NULL);
-                cout << "filename:" << fname << endl;
+              //  cout << "filename:" << fname << endl;
                 myfile.open(fname);
                 // string fc=base64_decode(incoming.body.substr(1,incoming.body.size()-2));
                 string fc=base64_decode(incoming.body);
                 //  cout << "content:" << fc << endl;
                 myfile <<fc;
                 myfile.close();
-              //  sout<<fname << "it's post "         << incoming.path << endl;
-                sout << needleinocean(fname).c_str() << endl;
+             //  
+               string tempid =incoming.headers["tempid"];
+             //  cout << "before needle:" << tempid << endl;
+                sout << needleinocean(fname,tempid).c_str() << endl;
                 return sout.str();
             }
             else if(incoming.path=="/addnewid"){
                 ofstream myfile;
-                string fname =incoming.headers["id"];
+                 stringstream ssfile;
+                   string fname =incoming.headers["id"];
+    ssfile<<dirname<< "/"<<fname <<flush;              
                 cout << "filename:" << fname << "--"<< incoming.headers["id"] << endl;
-               ifstream fin(dirname+"/"+ fname);
+               ifstream fin(ssfile.str());
                if(fin){
                     sout << "id exist" << endl;
                 return sout.str();
                }
-                myfile.open(dirname+"/"+ fname);
+                myfile.open(ssfile.str());
                 // string fc=base64_decode(incoming.body.substr(1,incoming.body.size()-2));
                 string fc=base64_decode(incoming.body);
                 //  cout << "content:" << fc << endl;
@@ -296,7 +299,7 @@ class web_server : public server_http
 matrix<rgb_pixel> img1;
 std::vector<matrix<rgb_pixel>> faceone;
 std::vector<matrix<float,0,1>> face_descriptor;
-                 load_image(img1, dirname+"/"+ fname);
+                 load_image(img1, ssfile.str());
         for (auto face : detector(img1))
         {
             auto shape = sp(img1, face);
