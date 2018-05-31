@@ -6,6 +6,7 @@
 #include <dirent.h>
 //#include <io.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <dlib/server.h>
 #include <dlib/dnn.h>
@@ -26,7 +27,7 @@ using residual_down = add_prev2<avg_pool<2,2,2,2,skip1<tag2<block<N,BN,2,tag1<SU
 
 template <int N, template <typename> class BN, int stride, typename SUBNET> 
 using block  = BN<con<N,3,3,1,1,relu<BN<con<N,3,3,stride,stride,SUBNET>>>>>;
-
+/*
 template <int N, typename SUBNET> using ares      = relu<residual<block,N,affine,SUBNET>>;
 template <int N, typename SUBNET> using ares_down = relu<residual_down<block,N,affine,SUBNET>>;
 
@@ -46,13 +47,58 @@ using anet_type = loss_metric<fc_no_bias<128,avg_pool_everything<
                             input_rgb_image_sized<150>
                             >>>>>>>>>>>>;
 
+template <int N, typename SUBNET> using res       = relu<residual<block,N,bn_con,SUBNET>>;
+template <int N, typename SUBNET> using ares      = relu<residual<block,N,affine,SUBNET>>;
+template <int N, typename SUBNET> using res_down  = relu<residual_down<block,N,bn_con,SUBNET>>;
+template <int N, typename SUBNET> using ares_down = relu<residual_down<block,N,affine,SUBNET>>;
+*/
+// ----------------------------------------------------------------------------------------
+
+template <int N, typename SUBNET> using res       = relu<residual<block,N,bn_con,SUBNET>>;
+template <int N, typename SUBNET> using ares      = relu<residual<block,N,affine,SUBNET>>;
+template <int N, typename SUBNET> using res_down  = relu<residual_down<block,N,bn_con,SUBNET>>;
+template <int N, typename SUBNET> using ares_down = relu<residual_down<block,N,affine,SUBNET>>;
+template <typename SUBNET> using level0 = res_down<256,SUBNET>;
+template <typename SUBNET> using level1 = res<256,res<256,res_down<256,SUBNET>>>;
+template <typename SUBNET> using level2 = res<128,res<128,res_down<128,SUBNET>>>;
+template <typename SUBNET> using level3 = res<64,res<64,res<64,res_down<64,SUBNET>>>>;
+template <typename SUBNET> using level4 = res<32,res<32,res<32,SUBNET>>>;
+
+template <typename SUBNET> using alevel0 = ares_down<256,SUBNET>;
+template <typename SUBNET> using alevel1 = ares<256,ares<256,ares_down<256,SUBNET>>>;
+template <typename SUBNET> using alevel2 = ares<128,ares<128,ares_down<128,SUBNET>>>;
+template <typename SUBNET> using alevel3 = ares<64,ares<64,ares<64,ares_down<64,SUBNET>>>>;
+template <typename SUBNET> using alevel4 = ares<32,ares<32,ares<32,SUBNET>>>;
+
+
+// training network type
+using net_type = loss_metric<fc_no_bias<128,avg_pool_everything<
+                            level0<
+                            level1<
+                            level2<
+                            level3<
+                            level4<
+                            max_pool<3,3,2,2,relu<bn_con<con<32,7,7,2,2,
+                            input_rgb_image
+                            >>>>>>>>>>>>;
+
+// testing network type (replaced batch normalization with fixed affine transforms)
+using anet_type = loss_metric<fc_no_bias<128,avg_pool_everything<
+                            alevel0<
+                            alevel1<
+                            alevel2<
+                            alevel3<
+                            alevel4<
+                            max_pool<3,3,2,2,relu<affine<con<32,7,7,2,2,
+                            input_rgb_image
+                            >>>>>>>>>>>>;
+
 // ----------------------------------------------------------------------------------------
 static const std::string base64_chars = 
              "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
              "abcdefghijklmnopqrstuvwxyz"
              "0123456789+/";
 
-string picpath="/tmp";
 static inline bool is_base64(unsigned char c) {
   return (isalnum(c) || (c == '+') || (c == '/'));
 }
@@ -146,16 +192,18 @@ std::vector<matrix<float,0,1>> face_descriptors;
  frontal_face_detector detector = get_frontal_face_detector();
    shape_predictor sp;
     anet_type net;
-int dirinfo()
+int dirinfo(string picpath,string dnndata="dlib_face_recognition_resnet_model_v1.dat")
 {
  matrix<rgb_pixel> img1;
        DIR *dp;
     struct dirent *dirp;
     string dirname=picpath;//"/home/finch/dev/face_recognition-master/face_recognition/bbb";
 
-      deserialize("shape_predictor_5_face_landmarks.dat") >> sp;
+      deserialize("shape_predictor_68_face_landmarks.dat") >> sp;
 
-    deserialize("dlib_face_recognition_resnet_model_v1.dat") >> net;
+    deserialize(dnndata) >> net;
+    //deserialize("metric_network_renset.dat") >> net;
+    //deserialize("dlib_face_recognition_resnet_model_v1.dat") >> net;
     if((dp=opendir(dirname.c_str()))==NULL)
     {
         cout << "can't open" << dirname << endl;
@@ -203,7 +251,7 @@ string needleinocean(string idfile,string tempid="") try
         auto shape = sp(img1, face);
         matrix<rgb_pixel> face_chip;
        // extract_image_chip(img1, get_face_chip_details(shape,150,0.25), face_chip);
-        extract_image_chip(img1, get_face_chip_details(shape,200,0.2), face_chip);
+        extract_image_chip(img1, get_face_chip_details(shape,150,0.25), face_chip);
         facecheck.push_back(move(face_chip));
     }  
  
@@ -220,7 +268,7 @@ string needleinocean(string idfile,string tempid="") try
         for (size_t j = 0; j < face_descriptors_check.size(); ++j)
         {            
             float sim=length(face_descriptors[i]-face_descriptors_check[j]);
-            if ( sim < 0.5) {
+            if ( sim < 1.6) {
                 sscore ss;
                 ss.index=i;
                 ss.score=sim;
@@ -375,10 +423,15 @@ int main(int argc,char* argv[])
 {
     try
     {
-         cout << "needleinocean(argv[1]).c_str()" << endl;
-          picpath=argv[1];
-        dirinfo();
-      cout << picpath << endl;
+	if(argc<2){
+		cout << argv[0] << " picpath [datafile] " <<endl;
+		return -1;
+	}
+	if(argc==2)
+        dirinfo(argv[1]);
+	else if(argc==3)
+        dirinfo(argv[1],argv[2]);
+
         web_server our_web_server;
 
         // make it listen on port 5000
@@ -386,6 +439,9 @@ int main(int argc,char* argv[])
         // Tell the server to begin accepting connections.
         our_web_server.start_async();
 
+	for(;;){
+	usleep(9000);
+	}
         cout << "Press enter to end this program" << endl;
         cin.get();
     }
